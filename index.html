@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AVM-10 · Hemorrhagic presentation calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --film:#E7E9E5;
+  --panel:#F3F4F1;
+  --panel-2:#EDEEEA;
+  --ink:#15181B;
+  --ink-70:#454C52;
+  --ink-45:#767D83;
+  --rule:#C6CAC4;
+  --rule-soft:#D8DBD5;
+  --anno:#0C6F63;
+  --anno-tint:#DCE9E6;
+  --pos:#0C6F63;
+  --neg:#7A8288;
+
+  --sans:'IBM Plex Sans',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --disp:'Archivo','Helvetica Neue',Arial,sans-serif;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--film);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px 72px}
+
+/* ---------- header ---------- */
+header{padding:38px 0 22px;border-bottom:1px solid var(--ink)}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-45);margin:0 0 10px
+}
+h1{
+  font-family:var(--disp);font-weight:700;font-size:clamp(28px,4.6vw,44px);
+  letter-spacing:-.022em;line-height:1.04;margin:0 0 12px;max-width:22ch
+}
+.sub{margin:0;color:var(--ink-70);max-width:66ch;font-size:15px}
+
+/* ---------- layout ---------- */
+.grid{display:grid;grid-template-columns:1fr 400px;gap:0;align-items:start}
+.inputs{padding:30px 40px 30px 0;border-right:1px solid var(--rule)}
+.readout{position:sticky;top:0;padding:30px 0 30px 34px}
+
+/* ---------- form ---------- */
+fieldset{border:0;margin:0 0 30px;padding:0}
+fieldset:last-of-type{margin-bottom:0}
+legend{
+  font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--ink);padding:0 0 9px;width:100%;border-bottom:1px solid var(--ink);
+  display:flex;justify-content:space-between;align-items:baseline;
+}
+legend span{color:var(--ink-45);font-weight:400}
+
+.row{
+  display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;
+  padding:13px 0;border-bottom:1px solid var(--rule-soft);
+}
+.row:last-child{border-bottom:0}
+.row label,.rowlab{font-size:14.5px;color:var(--ink);cursor:pointer}
+.hint{display:block;font-size:12px;color:var(--ink-45);margin-top:1px;line-height:1.35}
+
+/* numeric */
+.numfield{display:flex;align-items:center;gap:11px}
+.numfield input[type=range]{width:132px;accent-color:var(--anno)}
+.numbox{
+  font-family:var(--mono);font-size:15px;font-weight:500;
+  width:70px;padding:5px 7px;text-align:right;
+  border:1px solid var(--rule);background:var(--panel);color:var(--ink);
+}
+.numbox:focus-visible{outline:2px solid var(--anno);outline-offset:1px}
+.unit{font-family:var(--mono);font-size:11.5px;color:var(--ink-45);width:16px}
+
+/* segmented */
+.seg{display:flex;border:1px solid var(--rule);background:var(--panel)}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{
+  font-family:var(--mono);font-size:12px;letter-spacing:.07em;
+  padding:6px 15px;cursor:pointer;color:var(--ink-70);
+  border-right:1px solid var(--rule);transition:background .12s,color .12s;
+}
+.seg label:last-of-type{border-right:0}
+.seg input:checked + label{background:var(--ink);color:var(--panel)}
+.seg input:focus-visible + label{outline:2px solid var(--anno);outline-offset:1px}
+
+/* toggle */
+.tog{position:absolute;opacity:0;pointer-events:none}
+.togface{
+  display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--ink-45);
+}
+.togface .box{
+  width:34px;height:19px;border:1px solid var(--rule);background:var(--panel);
+  position:relative;transition:background .14s,border-color .14s;flex:none;
+}
+.togface .box::after{
+  content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;
+  background:var(--ink-45);transition:transform .14s,background .14s;
+}
+.tog:checked + .togface .box{background:var(--anno-tint);border-color:var(--anno)}
+.tog:checked + .togface .box::after{transform:translateX(15px);background:var(--anno)}
+.tog:checked + .togface{color:var(--anno)}
+.tog:focus-visible + .togface .box{outline:2px solid var(--anno);outline-offset:2px}
+
+/* ---------- readout ---------- */
+.rlabel{
+  font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--ink-45);margin:0 0 4px
+}
+.big{
+  font-family:var(--disp);font-weight:700;font-variant-numeric:tabular-nums;
+  font-size:76px;letter-spacing:-.045em;line-height:.92;margin:0;
+  transition:color .2s;
+}
+.pct{font-size:.42em;font-weight:600;letter-spacing:-.01em;margin-left:.05em;color:var(--ink-45)}
+.bigsub{margin:8px 0 0;font-size:13.5px;color:var(--ink-70);line-height:1.45;max-width:30ch}
+
+/* contributions */
+.contrib{margin:28px 0 0}
+.contribhead{
+  font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-45);padding-bottom:8px;border-bottom:1px solid var(--ink);margin-bottom:4px;
+  display:flex;justify-content:space-between
+}
+.crow{
+  display:grid;grid-template-columns:1fr 96px 52px;gap:9px;align-items:center;
+  padding:5px 0;border-bottom:1px solid var(--rule-soft);font-size:12.5px
+}
+.crow:last-child{border-bottom:0}
+.cname{color:var(--ink-70);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cbar{position:relative;height:9px;background:var(--panel-2)}
+.cbar i{position:absolute;top:0;height:9px;display:block;transition:width .25s,left .25s}
+.cbar .mid{position:absolute;top:-2px;bottom:-2px;left:50%;width:1px;background:var(--rule)}
+.cval{font-family:var(--mono);font-size:11.5px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* footer */
+
+@media (max-width:900px){
+  .grid{grid-template-columns:1fr}
+  .inputs{padding:26px 0;border-right:0;border-bottom:1px solid var(--ink);order:2}
+  .readout{position:static;padding:26px 0 0;order:1}
+  .big{font-size:62px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Pragmatic 10-variable model</p>
+  <h1>Hemorrhagic presentation in untreated brain AVM</h1>
+  <p class="sub">Estimates the probability that a newly diagnosed arteriovenous malformation presents with hemorrhage, from ten variables available at the bedside. Derived in 2507 patients across 20 centers.</p>
+</header>
+
+<div class="grid">
+
+  <!-- ================= INPUTS ================= -->
+  <form class="inputs" id="form" autocomplete="off">
+
+    <fieldset>
+      <legend>Patient <span>2 variables</span></legend>
+
+      <div class="row">
+        <label for="age">Age
+          <span class="hint">Years at diagnosis</span>
+        </label>
+        <div class="numfield">
+          <input type="range" id="ageR" min="0" max="90" step="1" value="41" aria-label="Age slider">
+          <input type="number" class="numbox" id="age" min="0" max="95" step="1" value="41">
+          <span class="unit">y</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <span class="rowlab">Sex</span>
+        <div class="seg">
+          <input type="radio" name="sex" id="sexM" value="1" checked>
+          <label for="sexM">Male</label>
+          <input type="radio" name="sex" id="sexF" value="0">
+          <label for="sexF">Female</label>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Nidus <span>3 variables</span></legend>
+
+      <div class="row">
+        <label for="size">Maximum nidus diameter
+          <span class="hint">Largest dimension on DSA, CTA or MRA</span>
+        </label>
+        <div class="numfield">
+          <input type="range" id="sizeR" min="0.3" max="8" step="0.1" value="2.6" aria-label="Nidus size slider">
+          <input type="number" class="numbox" id="size" min="0.3" max="10" step="0.1" value="2.6">
+          <span class="unit">cm</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <span class="rowlab" id="lab-deep">Deep location
+          <span class="hint">Basal ganglia, thalamus, brainstem or cerebellum</span>
+        </span>
+        <input type="checkbox" class="tog" id="deep" aria-labelledby="lab-deep">
+        <label class="togface" for="deep"><span class="box"></span><span class="st">No</span></label>
+      </div>
+
+      <div class="row">
+        <span class="rowlab" id="lab-eloq">Eloquent location
+          <span class="hint">Sensorimotor, language, visual cortex, internal capsule, thalamus, brainstem, cerebellar peduncles or deep nuclei</span>
+        </span>
+        <input type="checkbox" class="tog" id="eloq" aria-labelledby="lab-eloq">
+        <label class="togface" for="eloq"><span class="box"></span><span class="st">No</span></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Angioarchitecture <span>5 variables</span></legend>
+
+      <div class="row">
+        <span class="rowlab" id="lab-dvd">Exclusive deep venous drainage
+          <span class="hint">All drainage via internal cerebral, basal or precentral cerebellar veins</span>
+        </span>
+        <input type="checkbox" class="tog" id="dvd" aria-labelledby="lab-dvd">
+        <label class="togface" for="dvd"><span class="box"></span><span class="st">No</span></label>
+      </div>
+
+      <div class="row">
+        <span class="rowlab" id="lab-feedn">Multiple arterial feeders
+          <span class="hint">More than one identifiable feeding pedicle</span>
+        </span>
+        <input type="checkbox" class="tog" id="feedn" aria-labelledby="lab-feedn" checked>
+        <label class="togface" for="feedn"><span class="box"></span><span class="st">Yes</span></label>
+      </div>
+
+      <div class="row">
+        <span class="rowlab" id="lab-feedd">Feeder diameter &gt; 1 mm
+          <span class="hint">Any feeding artery exceeding 1 mm</span>
+        </span>
+        <input type="checkbox" class="tog" id="feedd" aria-labelledby="lab-feedd" checked>
+        <label class="togface" for="feedd"><span class="box"></span><span class="st">Yes</span></label>
+      </div>
+
+      <div class="row">
+        <span class="rowlab" id="lab-anrsm">Nidal aneurysm
+          <span class="hint">Intranidal aneurysm or pseudoaneurysm</span>
+        </span>
+        <input type="checkbox" class="tog" id="anrsm" aria-labelledby="lab-anrsm">
+        <label class="togface" for="anrsm"><span class="box"></span><span class="st">No</span></label>
+      </div>
+
+      <div class="row">
+        <span class="rowlab" id="lab-vsten">Venous stenosis
+          <span class="hint">Focal narrowing of a draining vein</span>
+        </span>
+        <input type="checkbox" class="tog" id="vsten" aria-labelledby="lab-vsten">
+        <label class="togface" for="vsten"><span class="box"></span><span class="st">No</span></label>
+      </div>
+    </fieldset>
+  </form>
+
+  <!-- ================= READOUT ================= -->
+  <section class="readout">
+    <div aria-live="polite" aria-atomic="true">
+      <p class="rlabel">Estimated probability</p>
+      <p class="big"><span id="prob">40</span><span class="pct">%</span></p>
+      <p class="bigsub" id="probSub">that this AVM presents with hemorrhage.</p>
+    </div>
+
+    <div class="contrib">
+      <div class="contribhead"><span>Contribution to log-odds</span><span>vs mean patient</span></div>
+      <div id="contribList"></div>
+    </div>
+  </section>
+</div>
+
+</div>
+
+<script>
+/* =====================================================================
+   MODEL BLOCK — replace this object to deploy the real trained model.
+   Keep the key names; everything downstream reads from here.
+   ===================================================================== */
+const MODEL_SOURCE = "logistic-surrogate-v1";
+
+const COEF = {
+  intercept:       1.14780,
+  age:             0.00407,   // per year
+  nidus_size:     -0.33587,   // per cm
+  male:            0.21880,
+  deep_location:   0.39445,
+  deep_venous:    -0.21916,
+  multi_feeders:  -0.47522,
+  venous_stenosis: 0.04003,
+  nidal_aneurysm:  0.26116,
+  eloquent:       -0.04453,
+  feeder_gt1mm:   -0.57791
+};
+
+// Cohort means, used to centre the per-patient contribution breakdown
+const MEANS = {
+  age:41.2, nidus_size:2.58, male:0.512, deep_location:0.303,
+  deep_venous:0.075, multi_feeders:0.678, venous_stenosis:0.208,
+  nidal_aneurysm:0.226, eloquent:0.522, feeder_gt1mm:0.730
+};
+
+const LABELS = {
+  age:"Age", nidus_size:"Nidus diameter", male:"Male sex",
+  deep_location:"Deep location", deep_venous:"Deep venous drainage",
+  multi_feeders:"Multiple feeders", venous_stenosis:"Venous stenosis",
+  nidal_aneurysm:"Nidal aneurysm", eloquent:"Eloquent location",
+  feeder_gt1mm:"Feeder > 1 mm"
+};
+
+/* ---------------- element refs ---------------- */
+const $ = id => document.getElementById(id);
+const els = {
+  age:$("age"), ageR:$("ageR"), size:$("size"), sizeR:$("sizeR"),
+  deep:$("deep"), eloq:$("eloq"), dvd:$("dvd"), feedn:$("feedn"),
+  feedd:$("feedd"), anrsm:$("anrsm"), vsten:$("vsten")
+};
+
+/* ---------------- keep slider + box in sync ---------------- */
+function link(box, slider){
+  slider.addEventListener("input", () => { box.value = slider.value; update(); });
+  box.addEventListener("input", () => {
+    const v = parseFloat(box.value);
+    if(!isNaN(v)) slider.value = Math.min(Math.max(v, slider.min), slider.max);
+    update();
+  });
+}
+link(els.age, els.ageR);
+link(els.size, els.sizeR);
+
+/* ---------------- toggle text ---------------- */
+document.querySelectorAll(".tog").forEach(t => {
+  t.addEventListener("change", () => {
+    t.nextElementSibling.querySelector(".st").textContent = t.checked ? "Yes" : "No";
+    update();
+  });
+});
+document.querySelectorAll('input[name=sex]').forEach(r =>
+  r.addEventListener("change", update));
+
+/* ---------------- main ---------------- */
+const clamp = (v, lo, hi) => isNaN(v) ? lo : Math.min(Math.max(v, lo), hi);
+
+function readInputs(){
+  return {
+    age:             clamp(parseFloat(els.age.value), 0, 95),
+    nidus_size:      clamp(parseFloat(els.size.value), 0.3, 10),
+    male:            document.getElementById("sexM").checked ? 1 : 0,
+    deep_location:   els.deep.checked ? 1 : 0,
+    deep_venous:     els.dvd.checked ? 1 : 0,
+    multi_feeders:   els.feedn.checked ? 1 : 0,
+    venous_stenosis: els.vsten.checked ? 1 : 0,
+    nidal_aneurysm:  els.anrsm.checked ? 1 : 0,
+    eloquent:        els.eloq.checked ? 1 : 0,
+    feeder_gt1mm:    els.feedd.checked ? 1 : 0
+  };
+}
+
+function update(){
+  const x = readInputs();
+
+  let lp = COEF.intercept;
+  const contribs = [];
+  for(const k in MEANS){
+    lp += COEF[k] * x[k];
+    contribs.push({ key:k, value:COEF[k] * (x[k] - MEANS[k]) });
+  }
+  const p = 1 / (1 + Math.exp(-lp));
+
+  // headline
+  $("prob").textContent = Math.round(p * 100);
+
+  // contribution bars
+  contribs.sort((a,b) => Math.abs(b.value) - Math.abs(a.value));
+  const max = Math.max(...contribs.map(c => Math.abs(c.value)), 0.01);
+  $("contribList").innerHTML = contribs.map(c => {
+    const w = (Math.abs(c.value) / max) * 50;
+    const left = c.value >= 0 ? 50 : 50 - w;
+    const col = c.value >= 0 ? "var(--pos)" : "var(--neg)";
+    return `<div class="crow">
+      <span class="cname">${LABELS[c.key]}</span>
+      <span class="cbar"><span class="mid"></span>
+        <i style="left:${left}%;width:${w}%;background:${col}"></i></span>
+      <span class="cval" style="color:${col}">${c.value >= 0 ? "+" : "\u2212"}${Math.abs(c.value).toFixed(2)}</span>
+    </div>`;
+  }).join("");
+}
+
+update();
+</script>
+</body>
+</html>
